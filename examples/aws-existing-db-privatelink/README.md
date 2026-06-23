@@ -223,6 +223,23 @@ Important outputs:
 
 ## Tear down
 
+Before destroying this example, remove the RDI source connection or workspace that uses the PrivateLink service in Redis Cloud. AWS does not allow deleting a VPC endpoint service while it still has active consumer VPC endpoint connections.
+
+To check whether connections still exist:
+
+```bash
+SERVICE_ID=$(terraform output -raw vpc_endpoint_service_id)
+
+aws ec2 describe-vpc-endpoint-connections \
+  --region <region> \
+  --profile <aws-profile> \
+  --filters Name=service-id,Values="$SERVICE_ID" \
+  --query 'VpcEndpointConnections[].{EndpointId:VpcEndpointId,Owner:VpcEndpointOwner,State:VpcEndpointState}' \
+  --output table
+```
+
+Continue only after the command returns no active connections, or after any remaining connections are in a deleted/rejected terminal state.
+
 ```bash
 terraform destroy -var-file customer.tfvars
 ```
