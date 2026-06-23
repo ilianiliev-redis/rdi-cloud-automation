@@ -40,15 +40,13 @@ data "aws_caller_identity" "current" {
 
 locals {
   redis_privatelink_arns = (
-    var.redis_privatelink_arn == null ? [] :
-    can(tolist(var.redis_privatelink_arn)) ? [for arn in tolist(var.redis_privatelink_arn) : tostring(arn)] :
-    [tostring(var.redis_privatelink_arn)]
+    can(tolist(var.redis_privatelink_arn)) ? [for arn in tolist(var.redis_privatelink_arn) : trimspace(tostring(arn))] :
+    [trimspace(tostring(var.redis_privatelink_arn))]
   )
 
   redis_secrets_arns = (
-    var.redis_secrets_arn == null ? [] :
-    can(tolist(var.redis_secrets_arn)) ? [for arn in tolist(var.redis_secrets_arn) : tostring(arn)] :
-    [tostring(var.redis_secrets_arn)]
+    can(tolist(var.redis_secrets_arn)) ? [for arn in tolist(var.redis_secrets_arn) : trimspace(tostring(arn))] :
+    [trimspace(tostring(var.redis_secrets_arn))]
   )
 
   resolved_db_endpoint = try(coalesce(
@@ -88,6 +86,38 @@ resource "aws_security_group" "nlb" {
   tags = merge(var.tags, {
     Name = "${var.name}-nlb"
   })
+
+  lifecycle {
+    precondition {
+      condition     = !var.enable_rds_failover_lambda || var.target_type == "ip"
+      error_message = "enable_rds_failover_lambda = true requires target_type = \"ip\" because the Lambda registers resolved endpoint IP addresses."
+    }
+
+    precondition {
+      condition     = !var.enable_rds_failover_lambda || local.resolved_db_endpoint != null
+      error_message = "enable_rds_failover_lambda = true requires db_endpoint or an rds_identifier that can be resolved to an RDS/Aurora endpoint."
+    }
+
+    precondition {
+      condition     = !var.enable_rds_failover_lambda || local.resolved_rds_source_id != null
+      error_message = "enable_rds_failover_lambda = true requires rds_source_id or rds_identifier for the RDS event subscription."
+    }
+
+    precondition {
+      condition     = var.enable_rds_failover_lambda || length(var.static_targets) > 0
+      error_message = "When enable_rds_failover_lambda = false, static_targets must contain at least one target."
+    }
+
+    precondition {
+      condition     = !var.manage_security_group_rule || length(var.db_security_group_ids) > 0
+      error_message = "manage_security_group_rule = true requires at least one db_security_group_ids value."
+    }
+
+    precondition {
+      condition     = var.create_secret || var.existing_secret_arn != null
+      error_message = "create_secret = false requires existing_secret_arn."
+    }
+  }
 }
 
 resource "aws_vpc_security_group_ingress_rule" "db_from_nlb" {
@@ -140,6 +170,8 @@ resource "random_id" "secret_suffix" {
   byte_length = 8
 }
 
+# Secret resources are inlined instead of using modules/aws-secret-manager so
+# this example can bootstrap placeholder values and then ignore future edits.
 resource "aws_kms_key" "rdi_secret" {
   count = var.create_secret ? 1 : 0
 
@@ -187,8 +219,7 @@ resource "aws_secretsmanager_secret" "rdi" {
   name       = "${var.name}-${random_id.secret_suffix[0].hex}"
   kms_key_id = aws_kms_key.rdi_secret[0].arn
 
-  # No principals listed -> no resource policy -> only the owning AWS account can read.
-  policy = length(local.redis_secrets_arns) == 0 ? null : jsonencode({
+  policy = jsonencode({
     "Version" : "2012-10-17",
     "Statement" : [for p in local.redis_secrets_arns :
       {

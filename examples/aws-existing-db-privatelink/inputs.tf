@@ -53,6 +53,11 @@ variable "db_endpoint" {
   description = "Existing database DNS endpoint. Optional for RDS/Aurora if rds_identifier is supplied and lookup succeeds; required for RDS failover target refresh otherwise."
   type        = string
   default     = null
+
+  validation {
+    condition     = var.db_endpoint == null || trimspace(var.db_endpoint) != ""
+    error_message = "db_endpoint must not be empty when set."
+  }
 }
 
 variable "target_type" {
@@ -93,30 +98,61 @@ variable "rds_identifier" {
   description = "Existing Aurora cluster identifier or RDS instance identifier. Used for data-source lookup and RDS event subscription."
   type        = string
   default     = null
+
+  validation {
+    condition     = var.rds_identifier == null || trimspace(var.rds_identifier) != ""
+    error_message = "rds_identifier must not be empty when set."
+  }
 }
 
 variable "rds_source_id" {
   description = "Optional explicit source ID for the RDS event subscription. Defaults to rds_identifier or the looked-up source identifier."
   type        = string
   default     = null
+
+  validation {
+    condition     = var.rds_source_id == null || trimspace(var.rds_source_id) != ""
+    error_message = "rds_source_id must not be empty when set."
+  }
 }
 
 variable "rds_arn" {
   description = "Optional explicit RDS/Aurora ARN. Defaults to the looked-up source ARN when rds_identifier is supplied."
   type        = string
   default     = null
+
+  validation {
+    condition     = var.rds_arn == null || trimspace(var.rds_arn) != ""
+    error_message = "rds_arn must not be empty when set."
+  }
 }
 
 variable "redis_privatelink_arn" {
   description = "Redis Cloud AWS principal ARN(s) allowed to create a PrivateLink endpoint to this service. Use the value from the Redis Cloud RDI UI."
   type        = any
-  default     = null
+  nullable    = false
+
+  validation {
+    condition = (
+      try(trimspace(tostring(var.redis_privatelink_arn)) != "", false) ||
+      try(length(tolist(var.redis_privatelink_arn)) > 0 && alltrue([for arn in tolist(var.redis_privatelink_arn) : trimspace(tostring(arn)) != ""]), false)
+    )
+    error_message = "redis_privatelink_arn is required and must be a non-empty ARN string or non-empty list of ARN strings."
+  }
 }
 
 variable "redis_secrets_arn" {
   description = "Redis Cloud AWS principal ARN(s) allowed to read the credentials secret. Use the value from the Redis Cloud RDI UI."
   type        = any
-  default     = null
+  nullable    = false
+
+  validation {
+    condition = (
+      try(trimspace(tostring(var.redis_secrets_arn)) != "", false) ||
+      try(length(tolist(var.redis_secrets_arn)) > 0 && alltrue([for arn in tolist(var.redis_secrets_arn) : trimspace(tostring(arn)) != ""]), false)
+    )
+    error_message = "redis_secrets_arn is required and must be a non-empty ARN string or non-empty list of ARN strings."
+  }
 }
 
 variable "acceptance_required" {
@@ -159,6 +195,11 @@ variable "existing_secret_arn" {
   description = "Existing Secrets Manager secret ARN to use when create_secret = false."
   type        = string
   default     = null
+
+  validation {
+    condition     = var.existing_secret_arn == null || trimspace(var.existing_secret_arn) != ""
+    error_message = "existing_secret_arn must not be empty when set."
+  }
 }
 
 variable "rdi_username" {

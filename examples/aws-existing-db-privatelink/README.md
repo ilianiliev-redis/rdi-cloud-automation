@@ -174,7 +174,7 @@ If the customer already has a compatible secret, skip secret creation:
 ```hcl
 create_secret        = false
 existing_secret_arn  = "arn:aws:secretsmanager:eu-central-1:123456789012:secret:rdi-source"
-redis_secrets_arn    = null
+redis_secrets_arn    = "arn:aws:iam::123456789012:role/redis-data-pipeline-secrets-role"
 ```
 
 The existing secret must be readable by the Redis Cloud secrets role from the RDI UI and should contain:
@@ -185,6 +185,8 @@ The existing secret must be readable by the Redis Cloud secrets role from the RD
   "password": "password"
 }
 ```
+
+When `create_secret = false`, this example does not update the existing secret policy or its KMS key policy. Grant `redis_secrets_arn` access to the secret before using it in the Redis Cloud RDI connection workflow.
 
 ## Security group handling
 
