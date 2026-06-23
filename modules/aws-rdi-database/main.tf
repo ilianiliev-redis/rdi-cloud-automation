@@ -29,7 +29,6 @@ module "failover" {
   identifier             = var.identifier
   elb_tg_arn             = module.privatelink.tg_arn
   db_endpoint            = local.endpoint
-  rds_arn                = local.rds_arn
   rds_cluster_identifier = local.rds_source_id
   source_type            = local.rds_source_type
   db_port                = local.port

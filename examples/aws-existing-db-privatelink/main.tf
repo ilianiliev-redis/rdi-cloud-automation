@@ -55,11 +55,6 @@ locals {
     try(data.aws_db_instance.source[0].address, null),
   ), null)
 
-  resolved_rds_arn = try(coalesce(
-    var.rds_arn,
-    try(data.aws_rds_cluster.source[0].arn, null),
-  ), null)
-
   resolved_rds_source_id = try(coalesce(
     var.rds_source_id,
     var.rds_identifier,
@@ -156,7 +151,6 @@ module "rds_failover" {
   identifier             = "${var.name}-targets"
   elb_tg_arn             = module.privatelink.tg_arn
   db_endpoint            = local.resolved_db_endpoint
-  rds_arn                = local.resolved_rds_arn
   rds_cluster_identifier = local.resolved_rds_source_id
   source_type            = var.rds_source_type
   db_port                = var.db_port

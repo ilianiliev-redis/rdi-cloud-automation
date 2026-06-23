@@ -151,7 +151,6 @@ locals {
 
   # Resolve outputs from whichever resource path (Aurora cluster or single RDS instance) was taken.
   endpoint        = local.is_aurora ? aws_rds_cluster.this[0].endpoint : aws_db_instance.this[0].address
-  rds_arn         = local.is_aurora ? aws_rds_cluster.this[0].arn : aws_db_instance.this[0].arn
   rds_source_id   = local.is_aurora ? aws_rds_cluster.this[0].cluster_identifier : aws_db_instance.this[0].identifier
   rds_source_type = local.is_aurora ? "db-cluster" : "db-instance"
 

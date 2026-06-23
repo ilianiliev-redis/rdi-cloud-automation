@@ -198,7 +198,6 @@ module "rds_lambda" {
   identifier             = var.name
   elb_tg_arn             = module.privatelink.tg_arn
   db_endpoint            = local.db_endpoint # Direct RDS endpoint (proxy not used)
-  rds_arn                = local.db_module.rds_arn
   rds_cluster_identifier = local.db_module.rds_cluster_identifier
   db_port                = var.port
 }

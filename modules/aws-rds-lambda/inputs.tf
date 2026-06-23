@@ -15,10 +15,6 @@ variable "elb_tg_arn" {
   type = string
 }
 
-variable "rds_arn" {
-  type = string
-}
-
 variable "rds_cluster_identifier" {
   description = "The RDS cluster or instance identifier for the event subscription (always points to RDS, not proxy)"
   type        = string

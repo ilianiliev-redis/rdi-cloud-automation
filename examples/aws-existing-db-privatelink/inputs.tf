@@ -116,17 +116,6 @@ variable "rds_source_id" {
   }
 }
 
-variable "rds_arn" {
-  description = "Optional explicit RDS/Aurora ARN. Defaults to the looked-up source ARN when rds_identifier is supplied."
-  type        = string
-  default     = null
-
-  validation {
-    condition     = var.rds_arn == null || trimspace(var.rds_arn) != ""
-    error_message = "rds_arn must not be empty when set."
-  }
-}
-
 variable "redis_privatelink_arn" {
   description = "Redis Cloud AWS principal ARN(s) allowed to create a PrivateLink endpoint to this service. Use the value from the Redis Cloud RDI UI."
   type        = any
