@@ -22,8 +22,8 @@ manage_security_group_rule = true
 db_security_group_ids      = ["sg-0123456789abcdef0"]
 
 create_secret = true
-rdi_username  = "debezium"
-rdi_password  = "replace-with-a-secure-password"
+rdi_username  = "<put username here>" # e.g. debezium
+rdi_password  = "<put password here>"
 
 tags = {
   Project = "rdi"

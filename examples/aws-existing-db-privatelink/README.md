@@ -12,7 +12,7 @@ Use this when the customer already has a database such as Aurora, RDS, or a self
 - Redis Cloud principal allow-listing for the endpoint service
 - NLB security group
 - optional database security group ingress rule
-- optional Secrets Manager secret for RDI credentials
+- optional Secrets Manager secret and KMS key for RDI credentials
 - optional RDS/Aurora failover Lambda that keeps NLB targets synced with the current database endpoint IPs
 
 ## What this does not create
@@ -134,13 +134,40 @@ terraform output secret_arn
 
 ## Secrets
 
-By default, this example creates a Secrets Manager secret using `rdi_username` and `rdi_password`:
+By default, this example creates a Secrets Manager secret with placeholder values:
 
 ```hcl
 create_secret = true
-rdi_username  = "debezium"
-rdi_password  = "replace-with-a-secure-password"
+rdi_username  = "<put username here>"
+rdi_password  = "<put password here>"
 ```
+
+After `terraform apply`, open the created secret in AWS Secrets Manager and replace the placeholder JSON with the real RDI database credentials:
+
+```json
+{
+  "username": "debezium",
+  "password": "replace-with-the-real-password"
+}
+```
+
+In the default mode, Terraform creates the initial secret value and then ignores future `secret_string` changes:
+
+```hcl
+manage_secret_value_after_creation = false
+```
+
+This lets the customer rotate or correct credentials in Secrets Manager without a later Terraform apply overwriting them with placeholders. It also keeps real database credentials out of Terraform state.
+
+If you want Terraform to manage the secret value on every apply, opt in explicitly:
+
+```hcl
+manage_secret_value_after_creation = true
+rdi_username                       = "debezium"
+rdi_password                       = "replace-with-a-secure-password"
+```
+
+That mode stores the configured credential value in Terraform state.
 
 If the customer already has a compatible secret, skip secret creation:
 

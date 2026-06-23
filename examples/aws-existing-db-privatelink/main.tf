@@ -34,6 +34,10 @@ data "aws_db_instance" "source" {
   db_instance_identifier = var.rds_identifier
 }
 
+data "aws_caller_identity" "current" {
+  count = var.create_secret ? 1 : 0
+}
+
 locals {
   redis_privatelink_arns = (
     var.redis_privatelink_arn == null ? [] :
@@ -65,7 +69,7 @@ locals {
   ), null)
 
   targets    = var.enable_rds_failover_lambda ? {} : var.static_targets
-  secret_arn = var.create_secret ? module.secret[0].secret_arn : var.existing_secret_arn
+  secret_arn = var.create_secret ? aws_secretsmanager_secret.rdi[0].arn : var.existing_secret_arn
 }
 
 resource "aws_security_group" "nlb" {
@@ -136,13 +140,95 @@ resource "random_id" "secret_suffix" {
   byte_length = 8
 }
 
-module "secret" {
+resource "aws_kms_key" "rdi_secret" {
   count = var.create_secret ? 1 : 0
 
-  source = "../../modules/aws-secret-manager"
+  enable_key_rotation     = true
+  deletion_window_in_days = 7
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Id      = ""
+    Statement = concat([
+      {
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current[0].account_id}:root"
+        },
+        Action   = "kms:*"
+        Resource = "*"
+      }
+      ],
+      [for p in local.redis_secrets_arns :
+        {
+          "Effect" : "Allow",
+          "Principal" : {
+            "AWS" : join(":", concat(slice(split(":", p), 0, 5), ["root"]))
+          },
+          "Action" : [
+            "kms:Encrypt",
+            "kms:Decrypt",
+            "kms:ReEncrypt*",
+            "kms:GenerateDataKey*",
+            "kms:DescribeKey"
+          ],
+          "Resource" : "*"
+        }
+    ])
+  })
 
-  identifier         = "${var.name}-${random_id.secret_suffix[0].hex}"
-  allowed_principals = local.redis_secrets_arns
-  username           = var.rdi_username
-  password           = var.rdi_password
+  tags = merge(var.tags, {
+    Name = "${var.name}-rdi-secret"
+  })
+}
+
+resource "aws_secretsmanager_secret" "rdi" {
+  count = var.create_secret ? 1 : 0
+
+  name       = "${var.name}-${random_id.secret_suffix[0].hex}"
+  kms_key_id = aws_kms_key.rdi_secret[0].arn
+
+  # No principals listed -> no resource policy -> only the owning AWS account can read.
+  policy = length(local.redis_secrets_arns) == 0 ? null : jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [for p in local.redis_secrets_arns :
+      {
+        "Effect" : "Allow",
+        "Principal" : "*",
+        "Action" : ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
+        "Resource" : "*",
+        "Condition" : {
+          "StringLike" : {
+            "aws:PrincipalArn" : p
+          }
+        }
+    }]
+  })
+
+  tags = merge(var.tags, {
+    Name = "${var.name}-rdi-secret"
+  })
+}
+
+resource "aws_secretsmanager_secret_version" "rdi_bootstrap" {
+  count = var.create_secret && !var.manage_secret_value_after_creation ? 1 : 0
+
+  secret_id = aws_secretsmanager_secret.rdi[0].id
+  secret_string = jsonencode({
+    "username" : var.rdi_username,
+    "password" : var.rdi_password
+  })
+
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "rdi_managed" {
+  count = var.create_secret && var.manage_secret_value_after_creation ? 1 : 0
+
+  secret_id = aws_secretsmanager_secret.rdi[0].id
+  secret_string = jsonencode({
+    "username" : var.rdi_username,
+    "password" : var.rdi_password
+  })
 }

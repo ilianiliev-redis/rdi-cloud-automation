@@ -149,6 +149,12 @@ variable "create_secret" {
   default     = true
 }
 
+variable "manage_secret_value_after_creation" {
+  description = "When false, Terraform creates an initial placeholder secret value and then ignores future secret_string changes so users can edit credentials in Secrets Manager. When true, Terraform manages rdi_username/rdi_password on every apply."
+  type        = bool
+  default     = false
+}
+
 variable "existing_secret_arn" {
   description = "Existing Secrets Manager secret ARN to use when create_secret = false."
   type        = string
@@ -156,16 +162,16 @@ variable "existing_secret_arn" {
 }
 
 variable "rdi_username" {
-  description = "Database username RDI should use. Required when create_secret = true."
+  description = "Initial username written to the created secret. In the default bootstrap mode, replace the placeholder in Secrets Manager after apply."
   type        = string
-  default     = null
+  default     = "<put username here>"
 }
 
 variable "rdi_password" {
-  description = "Database password RDI should use. Required when create_secret = true."
+  description = "Initial password written to the created secret. In the default bootstrap mode, replace the placeholder in Secrets Manager after apply."
   type        = string
   sensitive   = true
-  default     = null
+  default     = "<put password here>"
 }
 
 variable "tags" {
