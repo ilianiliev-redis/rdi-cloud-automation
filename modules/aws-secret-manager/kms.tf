@@ -5,6 +5,14 @@ locals {
   kms_key_arn    = local.create_kms_key ? aws_kms_key.rdi_key[0].arn : var.existing_kms_key_arn
 }
 
+# The KMS key gained `count` when BYO-key support was added upstream. Migrate
+# existing state from the un-indexed address to [0] so the key is not scheduled
+# for deletion and recreated on the next apply.
+moved {
+  from = aws_kms_key.rdi_key
+  to   = aws_kms_key.rdi_key[0]
+}
+
 resource "terraform_data" "validate_kms_key" {
   input = {
     kms_key_mode         = var.kms_key_mode

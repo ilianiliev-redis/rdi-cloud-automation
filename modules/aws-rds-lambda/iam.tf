@@ -3,6 +3,24 @@ locals {
   lambda_execution_role_arn    = local.create_lambda_execution_role ? aws_iam_role.lambda_execution_role[0].arn : var.lambda_execution_role_arn
 }
 
+# These resources gained `count` when BYO-role support was added upstream.
+# Existing state created them at the un-indexed address, so migrate it to [0]
+# to avoid a destroy/recreate (and an IAM name collision) on the next apply.
+moved {
+  from = aws_iam_role.lambda_execution_role
+  to   = aws_iam_role.lambda_execution_role[0]
+}
+
+moved {
+  from = aws_iam_role_policy.ec2_elb_lambda_execution_role_policy
+  to   = aws_iam_role_policy.ec2_elb_lambda_execution_role_policy[0]
+}
+
+moved {
+  from = aws_iam_role_policy.log_group_lambda_execution_role_policy
+  to   = aws_iam_role_policy.log_group_lambda_execution_role_policy[0]
+}
+
 resource "terraform_data" "validate_lambda_execution_role" {
   input = {
     lambda_role_mode          = var.lambda_role_mode

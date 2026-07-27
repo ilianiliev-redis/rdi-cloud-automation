@@ -231,6 +231,12 @@ locals {
 
   # When RDS Proxy is enabled, use proxy endpoint; otherwise use RDS endpoint
   db_endpoint = var.use_rds_proxy ? aws_db_proxy.rds_proxy[0].endpoint : local.source_db.endpoint
+
+  redis_privatelink_arns = (
+    var.redis_privatelink_arn == null ? [] :
+    can(tolist(var.redis_privatelink_arn)) ? [for arn in tolist(var.redis_privatelink_arn) : tostring(arn)] :
+    [tostring(var.redis_privatelink_arn)]
+  )
 }
 
 resource "aws_security_group" "existing_db_nlb" {
@@ -418,7 +424,7 @@ module "privatelink" {
   target_type        = "ip"
   targets            = {} # Always start empty; Lambda will populate if not using proxy
   security_groups    = local.source_db.privatelink_security_groups
-  allowed_principals = [var.redis_privatelink_arn]
+  allowed_principals = local.redis_privatelink_arns
   internal           = var.nlb_internal
 }
 
