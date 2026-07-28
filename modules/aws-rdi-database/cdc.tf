@@ -35,8 +35,8 @@ resource "null_resource" "create_rdi_user_mysql" {
       echo "[${var.identifier}] Waiting for MySQL to be reachable..."
       sleep 30
       mysql -h ${module.privatelink.lb_hostname} -u ${local.cfg.master_username} -P ${local.port} <<SQL
-      CREATE USER IF NOT EXISTS '${local.cfg.rdi_username}'@'%' IDENTIFIED BY '${local.rdi_password}';
-      ALTER USER '${local.cfg.rdi_username}'@'%' IDENTIFIED BY '${local.rdi_password}';
+      CREATE USER IF NOT EXISTS '${local.cfg.rdi_username}'@'%' IDENTIFIED BY '${nonsensitive(local.rdi_password)}';
+      ALTER USER '${local.cfg.rdi_username}'@'%' IDENTIFIED BY '${nonsensitive(local.rdi_password)}';
       -- CDC privileges (server-wide).
       GRANT SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT, LOCK TABLES ON *.* TO '${local.cfg.rdi_username}'@'%';
       -- Full read+write+DDL on the deployment's own database so update-db / reset-db scripts work.
@@ -192,11 +192,11 @@ resource "null_resource" "create_rdi_user_sqlserver" {
       sqlcmd -S ${module.privatelink.lb_hostname},${local.port} -U ${local.cfg.master_username} -P '${nonsensitive(var.db_password)}' -Q "
       IF NOT EXISTS (SELECT * FROM sys.server_principals WHERE name = '${local.cfg.rdi_username}')
       BEGIN
-        CREATE LOGIN ${local.cfg.rdi_username} WITH PASSWORD = '${local.rdi_password}';
+        CREATE LOGIN ${local.cfg.rdi_username} WITH PASSWORD = '${nonsensitive(local.rdi_password)}';
       END
       ELSE
       BEGIN
-        ALTER LOGIN ${local.cfg.rdi_username} WITH PASSWORD = '${local.rdi_password}';
+        ALTER LOGIN ${local.cfg.rdi_username} WITH PASSWORD = '${nonsensitive(local.rdi_password)}';
       END
       USE master;
       IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '${local.cfg.rdi_username}')
