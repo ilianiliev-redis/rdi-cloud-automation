@@ -102,7 +102,7 @@ chown -R dev:dev /opt/rdi-tools
 #   ~/.bashrc runs for interactive non-login shells (e.g. sub-shells)
 cat > /etc/profile.d/zz-rdi-cd.sh <<'CD_EOF'
 # Auto-cd into the ops tools directory for interactive shells.
-if [[ $- == *i* ]] && [[ "$$PWD" == "$$HOME" ]]; then
+if [[ $- == *i* ]] && [[ "$PWD" == "$HOME" ]]; then
   cd /opt/rdi-tools 2>/dev/null || true
 fi
 CD_EOF

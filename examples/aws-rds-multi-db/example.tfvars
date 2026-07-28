@@ -10,7 +10,7 @@ region = "eu-central-1"
 # AWS_PROFILE or environment credentials), or set this to a local profile name.
 aws_profile = null
 
-name = "rdi-multi-db-example"
+name = "rdi-mdb-ex"
 
 # Availability Zone IDs are stable across AWS accounts, unlike AZ names.
 # Replace these IDs if you choose a different region.
@@ -52,7 +52,7 @@ databases = {
   }
 
   # Aurora example. Uncomment any optional override you need.
-  aurora_postgres = {
+  aurora-postgres = {
     engine = "aurora-postgres"
     # engine_version        = "17.5"
     # instance_class        = "db.t4g.medium"
@@ -64,7 +64,7 @@ databases = {
 
   # Per-database ARNs override the top-level defaults. Lists allow more than
   # one Redis Cloud subscription to consume this database and read its secret.
-  mariadb_shared = {
+  mariadb-shared = {
     engine        = "mariadb"
     public_access = true
     database_name = "inventory"
@@ -81,7 +81,7 @@ databases = {
 
   # Private database: no direct CIDR access. Automatic init_sql_file loading is
   # skipped for private databases; use the optional bastion tooling when needed.
-  postgres_private = {
+  postgres-private = {
     engine        = "postgres"
     public_access = false
     database_name = "inventory"
@@ -97,7 +97,7 @@ databases = {
 
   # Empty lists override the top-level ARN defaults and keep both integrations
   # closed for this database.
-  oracle_closed = {
+  oracle-closed = {
     engine                = "oracle"
     public_access         = true
     init_sql_file         = "../sample-data-sets/oracle.sql"
