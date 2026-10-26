@@ -26,7 +26,7 @@ provider "aws" {
 }
 
 module "rdi_lease" {
-  source = "github.com/ilianiliev-redis/rdi-cloud-automation//modules/aws-rdi-dynamodb-lease"
+  source = "github.com/redis/rdi-cloud-automation//modules/aws-rdi-dynamodb-lease"
 
   table_name     = "rdi-lease"
   replica_region = "eu-west-2"
