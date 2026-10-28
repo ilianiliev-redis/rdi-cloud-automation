@@ -46,6 +46,10 @@ output "rdi_helm_values" {
 Each entry of `rdi_helm_values` is the Helm values fragment for an RDI instance in that region.
 Point every RDI instance at the replica in its own region.
 
+The fragment covers only the lease store settings that come from this module. Each RDI instance
+must also set its own, unique `operator.leaderElection.instanceID` in its RDI values: instances
+left at the default `cluster-1` treat each other's lease as their own, and both become leader.
+
 To manage IAM yourself, set `create_iam_policy = false` and use the `iam_policy_document` output.
 
 ## Inputs

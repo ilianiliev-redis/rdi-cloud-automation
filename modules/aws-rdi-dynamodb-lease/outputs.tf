@@ -27,7 +27,7 @@ output "iam_policy_arn" {
 }
 
 output "rdi_helm_values" {
-  description = "RDI Helm values for the lease, per region."
+  description = "RDI Helm values for the lease store, per region. Covers only the settings from this module: set a unique operator.leaderElection.instanceID for each RDI instance in its own values."
   value = {
     for region in local.replica_regions : region => yamlencode({
       operator = {
